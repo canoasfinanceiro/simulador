@@ -9,12 +9,14 @@
         .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
         .header { text-align: center; margin-bottom: 25px; }
         .header h2 { color: #2c3e50; margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; }
+        .data-info { color: #7f8c8d; font-size: 13px; margin-top: 5px; }
         
         .input-group { background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #eee; }
         label { display: block; margin-bottom: 8px; font-weight: 600; color: #444; font-size: 12px; text-transform: uppercase; }
         input { width: 100%; padding: 10px; border: none; background: transparent; font-size: 24px; font-weight: bold; color: #d35400; outline: none; text-align: center; }
 
         .btn-copy { width: 100%; background: #27ae60; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 20px; display: none; }
+        .btn-copy:active { background: #219150; }
 
         table { width: 100%; border-collapse: collapse; }
         tr td { padding: 12px 5px; border-bottom: 1px solid #f8f9fa; }
@@ -28,6 +30,7 @@
 <div class="card">
     <div class="header">
         <h2>Simulação de Pagamento</h2>
+        <div class="data-info" id="dataAtual"></div>
     </div>
     
     <div class="input-group">
@@ -43,7 +46,8 @@
 </div>
 
 <script>
-    // Taxas extraídas e completadas dos prints de 2x a 21x
+    document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
+
     const taxas = {
         2: 0.0420, 3: 0.0490, 4: 0.0560, 5: 0.0630, 6: 0.0700, 
         7: 0.0799, 8: 0.0869, 9: 0.0939, 10: 0.1009, 11: 0.1079, 
@@ -88,17 +92,29 @@
 
     function copiarTexto() {
         const valor = document.getElementById('valorOriginal').value;
-        let texto = `*ORÇAMENTO*\nValor à vista: R$ ${parseFloat(valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}\n\n*Parcelamento:*\n`;
+        const data = document.getElementById('dataAtual').innerText;
+        let texto = `*ORÇAMENTO - ${data}*\n`;
+        texto += `Valor à vista: R$ ${parseFloat(valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}\n\n`;
+        texto += `*PARCELAMENTO (Parc. | Valor | Total):*\n`;
+        texto += `------------------------------------------\n`;
         
         for (let p = 2; p <= 21; p++) {
             let m = (p == 2 || p == 3) ? 1.025 : 1.05;
             let total = arredondarCima((valor * m) / (1 - taxas[p]));
             let parcela = arredondarCima(total / p);
-            texto += `${p}x de R$ ${parcela.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\n`;
+            
+            let pStr = p.toString().padStart(2, '0');
+            let parcStr = parcela.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            let totalStr = total.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            
+            texto += `${pStr}x | R$ ${parcStr} | R$ ${totalStr}\n`;
         }
         
+        texto += `------------------------------------------\n`;
+        texto += `_Simulação sujeita a alteração._`;
+        
         navigator.clipboard.writeText(texto).then(() => {
-            alert("Orçamento completo copiado!");
+            alert("Orçamento com 3 colunas copiado!");
         });
     }
 </script>
