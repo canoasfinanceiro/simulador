@@ -3,84 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de Vendas</title>
+    <title>Orçamento Rápido</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
-        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); width: 100%; max-width: 450px; }
-        h2 { color: #d35400; text-align: center; margin-top: 0; font-size: 22px; margin-bottom: 25px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; color: #444; font-size: 14px; }
-        input { width: 100%; padding: 15px; margin-bottom: 25px; border: 2px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 18px; outline: none; transition: border-color 0.3s; text-align: center; }
-        input:focus { border-color: #d35400; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h2 { color: #2c3e50; margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; }
+        .header p { color: #7f8c8d; font-size: 13px; margin-top: 5px; }
+        
+        .input-group { background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #eee; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #444; font-size: 12px; text-transform: uppercase; }
+        input { width: 100%; padding: 10px; border: none; background: transparent; font-size: 24px; font-weight: bold; color: #d35400; outline: none; text-align: center; }
+
+        .btn-copy { width: 100%; background: #27ae60; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 20px; display: none; transition: background 0.3s; }
+        .btn-copy:active { background: #219150; }
+
         table { width: 100%; border-collapse: collapse; }
-        th { background: #fef5e7; color: #d35400; padding: 12px 10px; text-align: left; font-size: 13px; text-transform: uppercase; border-radius: 8px 0 0 8px; }
-        th:last-child { border-radius: 0 8px 8px 0; text-align: right; }
-        td { padding: 15px 10px; border-bottom: 1px solid #f0f0f0; font-size: 15px; }
-        td:last-child { text-align: right; }
-        .total-venda { font-weight: bold; color: #2c3e50; font-size: 17px; }
-        .parcela-detalhe { color: #7f8c8d; font-size: 13px; margin-top: 2px; }
-        tr:last-child td { border-bottom: none; }
+        tr td { padding: 12px 5px; border-bottom: 1px solid #f8f9fa; }
+        .p-vezes { font-weight: bold; color: #2c3e50; font-size: 16px; }
+        .p-valor { text-align: right; font-weight: bold; color: #2c3e50; font-size: 16px; }
+        .p-total { text-align: right; color: #95a5a6; font-size: 11px; display: block; }
+        
+        /* Estilo para o Print */
+        @media print { .btn-copy, label, input { display: none; } }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Simulador de Vendas</h2>
-    
-    <label>Valor da Venda (Original)</label>
-    <input type="number" id="valorOriginal" placeholder="R$ 0,00" oninput="calcular()">
-
-    <div id="resultado" style="display:none;">
-        <table>
-            <thead>
-                <tr>
-                    <th>Parcelas</th>
-                    <th>Valor a Cobrar</th>
-                </tr>
-            </thead>
-            <tbody id="tabelaCorpo"></tbody>
-        </table>
+<div class="card" id="printArea">
+    <div class="header">
+        <h2>Simulação de Pagamento</h2>
+        <p id="dataAtual"></p>
     </div>
+    
+    <div class="input-group">
+        <label>Valor do Produto/Serviço</label>
+        <input type="number" id="valorOriginal" placeholder="0,00" oninput="calcular()">
+    </div>
+
+    <button class="btn-copy" id="btnCopiar" onclick="copiarTexto()">Copiar para WhatsApp 📋</button>
+
+    <table id="tabela">
+        <tbody id="corpoTabela"></tbody>
+    </table>
 </div>
 
 <script>
+    document.getElementById('dataAtual').innerText = new Date().toLocaleDateString('pt-BR');
+
     const taxas = {
         2: 0.0420, 3: 0.0490, 4: 0.0560, 5: 0.0630, 6: 0.0700, 
-        7: 0.0799, 8: 0.0869, 9: 0.0939, 10: 0.1009, 11: 0.1079, 
-        12: 0.1149, 13: 0.1219, 14: 0.1289, 15: 0.1359, 16: 0.1429, 
-        17: 0.1499, 18: 0.1569, 19: 0.1639, 20: 0.1709, 21: 0.1779
+        7: 0.0799, 8: 0.0869, 9: 0.0939, 10: 0.1009, 12: 0.1149, 15: 0.1359, 18: 0.1569
     };
 
     function calcular() {
         const valor = parseFloat(document.getElementById('valorOriginal').value);
-        const divResultado = document.getElementById('resultado');
-        const corpo = document.getElementById('tabelaCorpo');
+        const corpo = document.getElementById('corpoTabela');
+        const btn = document.getElementById('btnCopiar');
 
         if (!valor || valor <= 0) {
-            divResultado.style.display = 'none';
+            corpo.innerHTML = "";
+            btn.style.display = 'none';
             return;
         }
 
-        divResultado.style.display = 'block';
+        btn.style.display = 'block';
         corpo.innerHTML = "";
 
         for (let p in taxas) {
-            // Lógica oculta: 2.5% para 2x/3x e 5% para o restante
             let m = (p == 2 || p == 3) ? 1.025 : 1.05;
-            let alvo = valor * m;
-            
-            let totalVenda = alvo / (1 - taxas[p]);
-            let valorParcela = totalVenda / p;
+            let total = (valor * m) / (1 - taxas[p]);
+            let parcela = total / p;
 
             corpo.innerHTML += `
                 <tr>
-                    <td><strong>${p}x</strong></td>
-                    <td>
-                        <div class="total-venda">R$ ${totalVenda.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-                        <div class="parcela-detalhe">${p}x de R$ ${valorParcela.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    <td class="p-vezes">${p}x</td>
+                    <td class="p-valor">
+                        R$ ${parcela.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                        <span class="p-total">Total: R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
                     </td>
                 </tr>
             `;
         }
+    }
+
+    function copiarTexto() {
+        const valor = document.getElementById('valorOriginal').value;
+        let texto = `*ORÇAMENTO - SIMULAÇÃO*\n\nValor à vista: R$ ${parseFloat(valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}\n\n*Opções de Parcelamento:*\n`;
+        
+        for (let p in taxas) {
+            let m = (p == 2 || p == 3) ? 1.025 : 1.05;
+            let total = (valor * m) / (1 - taxas[p]);
+            let parcela = total / p;
+            texto += `${p}x de R$ ${parcela.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\n`;
+        }
+        
+        texto += `\n_Válido para hoje._`;
+        
+        navigator.clipboard.writeText(texto).then(() => {
+            alert("Texto copiado! Agora é só colar no WhatsApp do cliente.");
+        });
     }
 </script>
 
