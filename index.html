@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Canoas Financeiro</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); width: 100%; max-width: 450px; }
+        h2 { color: #d35400; text-align: center; margin-top: 0; font-size: 22px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #444; font-size: 14px; }
+        input { width: 100%; padding: 15px; margin-bottom: 20px; border: 2px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 18px; outline: none; transition: border-color 0.3s; }
+        input:focus { border-color: #d35400; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #fef5e7; color: #d35400; padding: 12px 8px; text-align: left; font-size: 13px; text-transform: uppercase; }
+        td { padding: 12px 8px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+        .total-venda { font-weight: bold; color: #2c3e50; font-size: 16px; }
+        .parcela-detalhe { color: #7f8c8d; font-size: 13px; margin-top: 2px; }
+        .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #e8f8f5; color: #1abc9c; font-weight: bold; }
+        .badge-alt { background: #ebf5fb; color: #3498db; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Simulador de Vendas</h2>
+    
+    <label>Valor da Venda (Original)</label>
+    <input type="number" id="valorOriginal" placeholder="R$ 0,00" oninput="calcular()">
+
+    <div id="resultado" style="display:none;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Parcelas</th>
+                    <th>Margem</th>
+                    <th>Valor a Cobrar</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaCorpo"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const taxas = {
+        2: 0.0420, 3: 0.0490, 4: 0.0560, 5: 0.0630, 6: 0.0700, 
+        7: 0.0799, 8: 0.0869, 9: 0.0939, 10: 0.1009, 11: 0.1079, 
+        12: 0.1149, 13: 0.1219, 14: 0.1289, 15: 0.1359, 16: 0.1429, 
+        17: 0.1499, 18: 0.1569, 19: 0.1639, 20: 0.1709, 21: 0.1779
+    };
+
+    function calcular() {
+        const valor = parseFloat(document.getElementById('valorOriginal').value);
+        const divResultado = document.getElementById('resultado');
+        const corpo = document.getElementById('tabelaCorpo');
+
+        if (!valor || valor <= 0) {
+            divResultado.style.display = 'none';
+            return;
+        }
+
+        divResultado.style.display = 'block';
+        corpo.innerHTML = "";
+
+        for (let p in taxas) {
+            // Regra: 2.5% para 2x e 3x, 5% para o resto
+            let margem = (p == 2 || p == 3) ? 1.025 : 1.05;
+            let alvo = valor * margem;
+            
+            let totalVenda = alvo / (1 - taxas[p]);
+            let valorParcela = totalVenda / p;
+            let labelMargem = (p == 2 || p == 3) ? "2,5%" : "5%";
+
+            corpo.innerHTML += `
+                <tr>
+                    <td><strong>${p}x</strong></td>
+                    <td><span class="badge ${p > 3 ? 'badge-alt' : ''}">${labelMargem}</span></td>
+                    <td>
+                        <div class="total-venda">R$ ${totalVenda.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        <div class="parcela-detalhe">${p}x de R$ ${valorParcela.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+</script>
+
+</body>
+</html>
